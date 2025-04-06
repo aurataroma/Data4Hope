@@ -1,3 +1,4 @@
+pip install streamlit transformers sentencepiece
 import streamlit as st
 from transformers import MarianMTModel, MarianTokenizer
 import tempfile
