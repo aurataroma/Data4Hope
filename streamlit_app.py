@@ -1,5 +1,5 @@
 import streamlit as st
-from transformers import MarianMTModel, MarianTokenizer
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import os
 
 st.set_page_config(
@@ -9,8 +9,8 @@ st.set_page_config(
 )
 
 model_map = {
-    "English to Spanish": ("en", "es"),
-    "Spanish to English": ("es", "en")
+    "English to Spanish": "Helsinki-NLP/opus-mt-en-es",
+    "Spanish to English": "Helsinki-NLP/opus-mt-es-en"  
 }
 
 st.title("Data4Hope English2Spanish Translator")
@@ -18,19 +18,17 @@ direction = st.selectbox("Choose translation direction", list(model_map.keys()))
 
 uploaded_file = st.file_uploader("Upload a .txt file", type=["txt"])
 
-# Specify a cache directory
+# Cache Dir
 cache_dir = "/tmp/model_cache"
 os.makedirs(cache_dir, exist_ok=True)
 
 if uploaded_file and direction:
-    src_lang, tgt_lang = model_map[direction]
-    model_name = f"Helsinki-NLP/opus-mt-{src_lang}-{tgt_lang}"
+    model_name = model_map[direction]
     
     try:
-        # Use the cache directory when loading the model and tokenizer
-        # and force download to handle potential corrupted cache issues
-        tokenizer = MarianTokenizer.from_pretrained(model_name, cache_dir=cache_dir, force_download=True)
-        model = MarianMTModel.from_pretrained(model_name, cache_dir=cache_dir, force_download=True)
+        # Loading Modeling from Hugging Face
+        tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=cache_dir)
+        model = AutoModelForSeq2SeqLM.from_pretrained(model_name, cache_dir=cache_dir)
 
         text = uploaded_file.read().decode("utf-8")
         inputs = tokenizer([text], return_tensors="pt", truncation=True, padding=True)
