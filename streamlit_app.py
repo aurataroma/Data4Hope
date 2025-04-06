@@ -1,6 +1,5 @@
 import streamlit as st
 from transformers import MarianMTModel, MarianTokenizer
-import tempfile
 import os
 
 st.set_page_config(
@@ -27,14 +26,18 @@ if uploaded_file and direction:
     src_lang, tgt_lang = model_map[direction]
     model_name = f"Helsinki-NLP/opus-mt-{src_lang}-{tgt_lang}"
     
-    # Use the cache directory when loading the model and tokenizer
-    tokenizer = MarianTokenizer.from_pretrained(model_name, cache_dir=cache_dir)
-    model = MarianMTModel.from_pretrained(model_name, cache_dir=cache_dir)
+    try:
+        # Use the cache directory when loading the model and tokenizer
+        # and force download to handle potential corrupted cache issues
+        tokenizer = MarianTokenizer.from_pretrained(model_name, cache_dir=cache_dir, force_download=True)
+        model = MarianMTModel.from_pretrained(model_name, cache_dir=cache_dir, force_download=True)
 
-    text = uploaded_file.read().decode("utf-8")
-    inputs = tokenizer([text], return_tensors="pt", truncation=True)
-    translated = model.generate(**inputs)
-    translated_text = tokenizer.decode(translated[0], skip_special_tokens=True)
+        text = uploaded_file.read().decode("utf-8")
+        inputs = tokenizer([text], return_tensors="pt", truncation=True, padding=True)
+        translated = model.generate(**inputs)
+        translated_text = tokenizer.decode(translated[0], skip_special_tokens=True)
 
-    st.success("Translation Done!")
-    st.download_button("Download Translation", translated_text, file_name="translated.txt")
+        st.success("Translation Done!")
+        st.download_button("Download Translation", translated_text, file_name="translated.txt")
+    except Exception as e:
+        st.error(f"An error occurred while loading the model or during translation: {e}")
